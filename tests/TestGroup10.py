@@ -273,7 +273,7 @@ class TestNo90(unittest.TestCase):
 
         
 
-class EmergencyMode(base_tests.SimpleDataPlane):
+class TestNo120(base_tests.SimpleDataPlane):
     """
     If the switch supports Emergency-Mode,
     then verify 
@@ -281,7 +281,7 @@ class EmergencyMode(base_tests.SimpleDataPlane):
     """
   
     def runTest(self):
-        logging.info("Running EmergencyMode test ") 
+        logging.info("Running TestNo120 EmergencyMode test ") 
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -311,7 +311,7 @@ class EmergencyMode(base_tests.SimpleDataPlane):
 
 
 
-class EmergencyMode2(base_tests.SimpleDataPlane):
+class TestNo140(base_tests.SimpleDataPlane):
     """
     If the switch supports Emergency-Mode,
     then verify 
@@ -364,7 +364,7 @@ class EmergencyMode2(base_tests.SimpleDataPlane):
 
 
 
-class FailSecureMode(base_tests.SimpleDataPlane):
+class TestNo150(base_tests.SimpleDataPlane):
     """If switch does not support Emergency mode , it should support fail-secure mode
     (refer spec 1.0.1).
     Verify even after the control channel disconnection, the standard flows timeout normally"""
