@@ -692,7 +692,393 @@ class WildcardMatchPrio(base_tests.SimpleDataPlane):
         self.dataplane.send(of_ports[0], str(pkt1))
         receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
 
+class IpSrcExact(base_tests.SimpleDataPlane):
+
+    """"Verify match on single Header Field Field -- IP_SRC_ADDRESS 
+    Generates an exact match here"""
+
+    def runTest(self):
+
+        logging.info("Running Ip_Src test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        rv = delete_all_flows(self.controller)
+        self.assertEqual(rv, 0, "Failed to delete all flows")
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+
+        #Create a flow for match on ip_src_address (exact match)
+        val=0 #no. of bits to be wildcarded in the flow 
+        (pkt,match) = match_ip_src(self,of_ports,val)
+
+        #Send Packet matching the flow 
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Send a non-matching packet , verify packet_in gets triggered
+        pkt2 = simple_tcp_packet(ip_src='149.165.130.66')
+        self.dataplane.send(of_ports[0], str(pkt2))
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=4)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
 
 
+class IpSrcWildcard(base_tests.SimpleDataPlane):
+
+    """"Verify match on single Header Field Field -- IP_SRC_ADDRESS 
+    Wildcards all bits in ip_src_address here"""
+
+    def runTest(self):
+
+        logging.info("Running IpSrcWildcard test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        rv = delete_all_flows(self.controller)
+        self.assertEqual(rv, 0, "Failed to delete all flows")
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+
+        #Create a flow for match on ip_src_address (wildcard all)
+        val=32 #/* IP source address wildcard bit count
+        (pkt,match) = match_ip_src(self,of_ports,val)
+
+        #Send Packet matching the flow 
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+        
+        #Send a non-matching packet , verify it also matches the flow_entry
+        pkt2 = simple_tcp_packet(ip_src='149.165.130.66')
+        self.dataplane.send(of_ports[0], str(pkt2))
+        receive_pkt_check(self.dataplane,pkt2,[yes_ports],no_ports,self)
+
+
+class IpDstExact(base_tests.SimpleDataPlane):
+
+    """"Verify match on single Header Field Field -- IP_DST_ADDRESS 
+    Generates an exact match here"""
+
+    def runTest(self):
+
+        logging.info("Running Ip_Dst test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        rv = delete_all_flows(self.controller)
+        self.assertEqual(rv, 0, "Failed to delete all flows")
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+
+        #Create a flow for match on ip_dst_address (exact match)
+        val=0 #/* IP destination address wildcard bit count
+        (pkt,match) = match_ip_dst(self,of_ports,val)
+
+        #Send Packet matching the flow 
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Send a non-matching packet , verify packet_in gets triggered
+        pkt2 = simple_tcp_packet(ip_dst='149.165.130.66')
+        self.dataplane.send(of_ports[0], str(pkt2))
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=4)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
+
+class IpDstWildcard(base_tests.SimpleDataPlane):
+
+    """"Verify match on single Header Field Field -- IP_DST_ADDRESS 
+    Generates an wildcard match here"""
+
+    def runTest(self):
+
+        logging.info("Running Ip_Dst test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        rv = delete_all_flows(self.controller)
+        self.assertEqual(rv, 0, "Failed to delete all flows")
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+
+        #Create a flow for match on ip_dst_address (wildcard match)
+        val=32 # /* IP dst address wildcard bit count 
+        (pkt,match) = match_ip_dst(self,of_ports,val)
+
+        #Send Packet matching the flow 
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Send a non-matching packet , verify packet_in gets triggered
+        pkt2 = simple_tcp_packet(ip_dst='149.165.130.66')
+        self.dataplane.send(of_ports[0], str(pkt2))
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=4)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
+
+
+class IpSrcRange(base_tests.SimpleDataPlane):
+
+    """"Verify match on single Header Field Field -- IP_SRC_ADDRESS 
+    Generates an match with wildcarding certain number of bits in ip_address"""
+
+    def runTest(self):
+
+        logging.info("Running Ip_Src test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        rv = delete_all_flows(self.controller)
+        self.assertEqual(rv, 0, "Failed to delete all flows")
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+
+        #Create a flow for match on ip_src_address, ignore the LSB of the address 
+        val=1 #/* IP source address wildcard bit count 
+        (pkt,match) = match_ip_src(self,of_ports,val)
+
+        #Send Packet matching the flow 
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Send a non-matching packet , with only LSB different than the ip-address matched against
+        pkt2 = simple_tcp_packet(ip_src='192.168.100.101')
+        self.dataplane.send(of_ports[0], str(pkt2))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt2,[yes_ports],no_ports,self)
+        
+        #Send a non-matching packet , verify packet_in gets triggered
+        pkt3 = simple_tcp_packet(ip_src='192.168.100.111')
+        self.dataplane.send(of_ports[0], str(pkt3))
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=4)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
+
+
+class IpDstRange(base_tests.SimpleDataPlane):
+
+    """"Verify match on single Header Field Field -- IP_SRC_ADDRESS 
+    Generates an match with wildcarding certain number of bits in ip_address"""
+
+    def runTest(self):
+
+        logging.info("Running Ip_Src test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        rv = delete_all_flows(self.controller)
+        self.assertEqual(rv, 0, "Failed to delete all flows")
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+
+        #Create a flow for match on ip_src_address, ignore the LSB of the address 
+        val=1 #/* IP address wildcard bit count 
+        (pkt,match) = match_ip_dst(self,of_ports,val)
+
+        #Send Packet matching the flow 
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Send a non-matching packet , with only LSB different than the ip-address matched against
+        pkt2 = simple_tcp_packet(ip_dst='192.168.100.101')
+        self.dataplane.send(of_ports[0], str(pkt2))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt2,[yes_ports],no_ports,self)
+        
+        #Send a non-matching packet , verify packet_in gets triggered
+        pkt3 = simple_tcp_packet(ip_dst='192.168.100.111')
+        self.dataplane.send(of_ports[0], str(pkt3))
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=4)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
+
+
+class IcmpType(base_tests.SimpleDataPlane):
+    
+    """Verify match on Single header field --Match on Tcp Source Port/IcmpType  """
+    
+    def runTest(self):
+
+        logging.info("Running IcmpType test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        rc = delete_all_flows(self.controller)
+        self.assertEqual(rc, 0, "Failed to delete all flows")
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+
+        (pkt,match) = match_icmp_type(self,of_ports)   
+
+        #Sending packet matching the tcp_sport, verify it implements the action
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Sending non matching packet , verify Packetin event gets triggered.
+        pkt2 = simple_icmp_packet(icmp_type=11);
+        self.dataplane.send(of_ports[0], str(pkt2))
+        
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=4)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
+
+
+class IcmpCode(base_tests.SimpleDataPlane):
+    
+    """Verify match on Single header field -- Tcp Destination Port/IcmpCode  """
+    
+    def runTest(self):
+
+        logging.info("Running IcmpCode test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        rc = delete_all_flows(self.controller)
+        self.assertEqual(rc, 0, "Failed to delete all flows")
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+
+        (pkt,match) = match_icmp_code(self,of_ports)   
+
+        #Sending packet matching the tcp_sport, verify it implements the action
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Sending non matching packet , verify Packetin event gets triggered.
+        pkt2 = simple_icmp_packet(icmp_type=3,icmp_code=1);
+        self.dataplane.send(of_ports[0], str(pkt2))
+        
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=4)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
+      
+       
+class UdpSrcPort(base_tests.SimpleDataPlane):
+    
+    """Verify match on Single header field -- Udp Source Port, """
+    
+    def runTest(self):
+
+        logging.info("Running Udp Src Port test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        delete_all_flows(self.controller)
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+    
+        logging.info("Inserting a flow with match on Udp Udp Source Port ")
+        logging.info("Sending matching and non-matching tcp packets")
+        logging.info("Verifying matching packets implements the action specified in the flow")
+
+        (pkt,match) = match_udp_src(self,of_ports)
+
+        #Sending packet matching the tcp_sport, verify it implements the action
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Sending non matching packet , verify Packetin event gets triggered.
+        pkt2 = simple_udp_packet(udp_sport=540);
+        self.dataplane.send(of_ports[0], str(pkt2))
+        
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=4)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
+
+
+class UdpDstPort(base_tests.SimpleDataPlane):
+    
+    """Verify match on Single header field -- Udp Destination Port """
+    
+    def runTest(self):
+
+        logging.info("Running Udp Destination Port test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+    
+        #Clear Switch State
+        delete_all_flows(self.controller)
+
+        egress_port=of_ports[1]
+        no_ports=set(of_ports).difference([egress_port])
+        yes_ports = of_ports[1]
+        
+        logging.info("Inserting a flow with match on Udp Destination Port ")
+        logging.info("Sending matching and non-matching packets")
+        logging.info("Verifying matching packets implements the action specified in the flow")
+
+        (pkt,match) = match_udp_dst(self,of_ports)
+
+        #Sending packet matching the tcp_dport, verify it implements the action
+        self.dataplane.send(of_ports[0], str(pkt))
+
+        #Verify packet implements the action specified in the flow
+        receive_pkt_check(self.dataplane,pkt,[yes_ports],no_ports,self)
+
+        #Sending non matching packet , verify Packetin event gets triggered.
+        pkt2 = simple_udp_packet(udp_dport=541);
+        self.dataplane.send(of_ports[0], str(pkt2))
+        
+        (response, raw) = self.controller.poll(ofp.OFPT_PACKET_IN,timeout=10)
+        self.assertTrue(response is not None, "PacketIn not received for non matching packet")
 
 

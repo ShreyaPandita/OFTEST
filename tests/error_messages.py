@@ -170,26 +170,13 @@ class BadRequestBadVendor(base_tests.SimpleProtocol):
              
         request = message.vendor()  
         request.vendor = 400  
+        
+        (response, pkt) = self.controller.transact(request)
+        self.assertEqual(response.header.type,ofp.OFPT_ERROR,'response is not error message') 
+        self.assertEqual(response.type, ofp.OFPET_BAD_REQUEST,'Error type not as expected')
+        if not response.code == ofp.OFPBAC_BAD_VENDOR | ofp.OFPBRC_EPERM :
+            logging.info("Error code is not as expected")
 
-        rv = self.controller.message_send(request)
-        self.assertTrue(rv==0,"Unable to send the message")
-
-        count = 0 
-        while True:
-            (response, raw) = self.controller.poll(ofp.OFPT_ERROR)
-            if not response:  # Timeout
-                break
-            if not response.type == ofp.OFPET_BAD_REQUEST:
-                logging.info("Error type not as expected")
-                break
-            if not response.code == ofp.OFPBAC_BAD_VENDOR | ofp.OFPBRC_EPERM:
-                logging.info("Error code is not as expected")
-                break
-            if not config["relax"]:  # Only one attempt to match
-                break
-            count += 1
-            if count > 10:   # Too many tries
-                break
 
 class BadRequestBufferUnknown(base_tests.SimpleProtocol):
     """

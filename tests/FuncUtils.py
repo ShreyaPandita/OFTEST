@@ -388,7 +388,7 @@ def match_ip_tos(self,of_ports,priority=None):
     self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
 
     return (pkt_iptos,match)
-
+  
 def match_ip_protocol(self,of_ports,priority=None):
     #Generate a Match on IP Protocol
 
@@ -469,6 +469,111 @@ def match_tcp_dst(self,of_ports,priority=None):
 
     return (pkt_matchdst,match)        
 
+def match_udp_src(self,of_ports,priority=None):
+    #Generate Match_Udp_Src
+
+    #Create a simple udp packet and generate match on udp source port flow
+    pkt_matchtSrc = simple_udp_packet(udp_sport=111)
+    match = parse.packet_to_flow_match(pkt_matchtSrc)
+    self.assertTrue(match is not None, "Could not generate flow match from pkt")
+
+    match.wildcards = ofp.OFPFW_ALL^ofp.OFPFW_DL_TYPE ^ofp.OFPFW_NW_PROTO ^ofp.OFPFW_TP_SRC
+    msg = message.flow_mod()
+    msg.out_port = ofp.OFPP_NONE
+    msg.command = ofp.OFPFC_ADD
+    msg.buffer_id = 0xffffffff
+    msg.match = match
+    if priority != None :
+        msg.priority = priority
+
+    act = action.action_output()
+    act.port = of_ports[1]
+    msg.actions.add(act)
+
+    self.controller.message_send(msg)
+    do_barrier(self.controller)
+
+    return (pkt_matchtSrc,match)
+
+def match_udp_dst(self,of_ports,priority=None):
+    #Generate Match_Udp_Dst
+
+        #Create a simple udp packet and generate match on udp destination port flow
+    pkt_matchdst = simple_udp_packet(udp_dport=112)
+    match = parse.packet_to_flow_match(pkt_matchdst)
+    self.assertTrue(match is not None, "Could not generate flow match from pkt")
+
+    match.wildcards = ofp.OFPFW_ALL ^ofp.OFPFW_DL_TYPE^ofp.OFPFW_NW_PROTO^ofp.OFPFW_TP_DST
+    msg = message.flow_mod()
+    msg.out_port = ofp.OFPP_NONE
+    msg.command = ofp.OFPFC_ADD
+    msg.buffer_id = 0xffffffff
+    msg.match = match
+    if priority != None :
+        msg.priority = priority
+    act = action.action_output()
+    act.port = of_ports[1]
+    msg.actions.add(act)
+
+    self.controller.message_send(msg)
+    do_barrier(self.controller)
+
+    return (pkt_matchdst,match) 
+
+
+def match_icmp_type(self,of_ports,priority=None):
+    #Generate Match on icmp type
+
+        #Create a simple icmp packet and generate match on icmp type
+    pkt = simple_icmp_packet(icmp_type=8)
+    match = parse.packet_to_flow_match(pkt)
+    self.assertTrue(match is not None, "Could not generate flow match from pkt")
+
+    match.wildcards = ofp.OFPFW_ALL ^ofp.OFPFW_DL_TYPE^ofp.OFPFW_NW_PROTO^ofp.OFPFW_TP_SRC 
+    msg = message.flow_mod()
+    msg.out_port = ofp.OFPP_NONE
+    msg.command = ofp.OFPFC_ADD
+    msg.buffer_id = 0xffffffff
+    msg.match = match
+    if priority != None :
+        msg.priority = priority
+    act = action.action_output()
+    act.port = of_ports[1]
+    self.assertTrue(msg.actions.add(act), "could not add action")
+
+    rv = self.controller.message_send(msg)
+    self.assertTrue(rv != -1, "Error installing flow mod")
+    self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
+
+    return (pkt,match)
+
+def match_icmp_code(self,of_ports,priority=None):
+    #Generate Match on icmp code
+
+        #Create a simple icmp packet and generate match on icmp type
+    pkt = simple_icmp_packet(icmp_type=3,icmp_code=0)
+    match = parse.packet_to_flow_match(pkt)
+    self.assertTrue(match is not None, "Could not generate flow match from pkt")
+
+    match.wildcards = ofp.OFPFW_ALL ^ofp.OFPFW_DL_TYPE^ofp.OFPFW_NW_PROTO^ofp.OFPFW_TP_SRC^ofp.OFPFW_TP_DST
+    msg = message.flow_mod()
+    msg.out_port = ofp.OFPP_NONE
+    msg.command = ofp.OFPFC_ADD
+    msg.buffer_id = 0xffffffff
+    msg.match = match
+    if priority != None :
+        msg.priority = priority
+    act = action.action_output()
+    act.port = of_ports[1]
+    self.assertTrue(msg.actions.add(act), "could not add action")
+
+    rv = self.controller.message_send(msg)
+    self.assertTrue(rv != -1, "Error installing flow mod")
+    self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
+
+    return (pkt,match)
+
+
 
 def match_ethernet_type(self,of_ports,priority=None):
     #Generate a Match_Ethernet_Type flow
@@ -496,8 +601,60 @@ def match_ethernet_type(self,of_ports,priority=None):
     self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
     return (pkt_matchtype,match)
 
-   
-   
+
+def match_ip_src(self,of_ports,wildcard_bits,priority=None):
+    #Generate match on ip_src address 
+
+    #Create a simple tcp packet and generate match on ip src address 
+    pkt = simple_tcp_packet(ip_src='192.168.100.100')
+    match = parse.packet_to_flow_match(pkt)
+    
+    # @param val is number of bits we need to wild-card in the ip_src add
+    # @ can take values from 0 (exact-match) 32 (for wild-card all)
+    val = wildcard_bits
+    wildcards = (ofp.OFPFW_ALL & ~ofp.OFPFW_NW_SRC_MASK) | (val << ofp.OFPFW_NW_SRC_SHIFT)
+    msg = message.flow_mod()
+    msg.match = match
+    if priority != None :
+        msg.priority = priority
+    act = action.action_output()
+    act.port = of_ports[1]
+    rv = msg.actions.add(act)
+    self.assertTrue(rv, "Could not add output action " + 
+                        str(of_ports[1]))
+    rv = self.controller.message_send(msg)
+    self.assertTrue(rv != -1, "Error installing flow mod")
+    self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")  
+    return (pkt,match)
+
+
+def match_ip_dst(self,of_ports,wildcard_bits,priority=None):
+    #Generate match on ip_dst address 
+
+    #Create a simple tcp packet and generate match on ip src address 
+    pkt = simple_tcp_packet(ip_dst='192.168.100.100')
+    match = parse.packet_to_flow_match(pkt)
+    
+    # @param val is number of bits we need to wild-card in the ip_src add
+    # @ can take values from 0 (exact-match) 32 (for wild-card all)
+    val = wildcard_bits
+
+    wildcards = (ofp.OFPFW_ALL & ~ofp.OFPFW_NW_DST_MASK) | (val << ofp.OFPFW_NW_DST_SHIFT)
+
+    msg = message.flow_mod()
+    msg.match = match
+    if priority != None :
+        msg.priority = priority
+    act = action.action_output()
+    act.port = of_ports[1]
+    rv = msg.actions.add(act)
+    self.assertTrue(rv, "Could not add output action " + 
+                        str(of_ports[1]))
+    rv = self.controller.message_send(msg)
+    self.assertTrue(rv != -1, "Error installing flow mod")
+    self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")  
+    return (pkt,match)
+
 
 def strict_modify_flow_action(self,egress_port,match,priority=None):
 # Strict Modify the flow Action 
@@ -689,11 +846,11 @@ def verify_tablestats(self,expect_lookup=None,expect_match=None,expect_active=No
         
 
     if expect_lookup != None :
-        self.assertEqual(expect_lookup,item.lookup_count,"lookup counter is not incremented properly")
+        self.assertEqual(expect_lookup,item.lookup_count,"lookup counter is not set properly")
     if expect_match != None :
-        self.assertEqual(expect_match,item.matched_count, "matched counter is not incremented properly")
+        self.assertEqual(expect_match,item.matched_count, "matched counter is not set properly")
     if expect_active != None :
-        self.assertEqual(expect_active,item.active_count,"active counter is not incremented properly")
+        self.assertEqual(expect_active,item.active_count,"active counter is not set properly")
 
 
 def verify_flowstats(self,match,byte_count=None,packet_count=None):
@@ -731,10 +888,10 @@ def verify_flowstats(self,match,byte_count=None,packet_count=None):
         
     
     if packet_count != None :
-        self.assertEqual(packet_count,item.packet_count,"packet_count counter is not incremented correctly")
+        self.assertEqual(packet_count,item.packet_count,"packet_count counter is not set correctly")
 
     if byte_count != None :   
-        self.assertEqual(byte_count,item.byte_count,"byte_count counter is not incremented correctly")
+        self.assertEqual(byte_count,item.byte_count,"byte_count counter is not set correctly")
 
 
 def verify_portstats(self, port,tx_packets=None,rx_packets=None,rx_byte=None,tx_byte=None):
@@ -779,13 +936,13 @@ def verify_portstats(self, port,tx_packets=None,rx_packets=None,rx_byte=None,tx_
         
 
     if (tx_packets != None):
-        self.assertEqual(tx_packets,item.tx_packets,"rx_packets counter is not incremented correctly")
+        self.assertEqual(tx_packets,item.tx_packets,"rx_packets counter is not set correctly")
     if (rx_packets != None):
-        self.assertEqual(rx_packets,item.rx_packets,"tx_packets counter is not incremented correctly")
+        self.assertEqual(rx_packets,item.rx_packets,"tx_packets counter is not set correctly")
     if (rx_byte != None):
-        self.assertEqual(rx_byte,item.rx_bytes,"rx_bytes counter is not incremented correctly")
+        self.assertEqual(rx_byte,item.rx_bytes,"rx_bytes counter is not set correctly")
     if (tx_byte != None):
-        self.assertEqual(tx_byte,item.tx_bytes,"tx_bytes counter is not incremented correctly")
+        self.assertEqual(tx_byte,item.tx_bytes,"tx_bytes counter is not set correctly")
 
 
 def verify_queuestats(self,port_num,queue_id,expect_packet=None,expect_byte=None):
@@ -821,10 +978,10 @@ def verify_queuestats(self,port_num,queue_id,expect_packet=None,expect_byte=None
         
     
     if expect_packet != None :
-        self.assertEqual(packet_counter,expect_packet,"tx_packets counter is not incremented correctly")
+        self.assertEqual(packet_counter,expect_packet,"tx_packets counter is not set correctly")
 
     if expect_byte != None :   
-        self.assertEqual(byte_counter,expect_byte,"tx_bytes counter is not incremented correctly")
+        self.assertEqual(byte_counter,expect_byte,"tx_bytes counter is not set correctly")
 
 
 ############################## Various delete commands #############################################################################################
