@@ -1,5 +1,8 @@
-"""These tests fall under Conformance Test-Suite (OF-SWITCH-1.0.0 TestCases).
-    Refer Documentation -- Detailed testing methodology 
+"""
+Duplicated copy for Lab Use 
+
+These tests fall under Conformance Test-Suite (OF-SWITCH-1.0.0 TestCases).
+Refer Documentation -- Detailed testing methodology 
     <Some of test-cases are directly taken from oftest> """
 
 "Test Suite 1 --> Basic Sanity Tests"
@@ -28,7 +31,7 @@ from time import sleep
 from FuncUtils import *
 from serial_failover import *
 
-class SwStartup(base_tests.SimpleDataPlane):
+class TestNo10(base_tests.SimpleDataPlane):
     """
     Switch Startup behaviour without estabilished control channel. 
     Make sure no dataplane packets are forwarded (since there are no flows)
@@ -38,7 +41,7 @@ class SwStartup(base_tests.SimpleDataPlane):
        
     def runTest(self):
 
-        logging.info("Running SwStartup test")
+        logging.info("Running TestNo10 SwStartup test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -70,7 +73,7 @@ class SwStartup(base_tests.SimpleDataPlane):
         receive_pkt_check(self.dataplane,packet,yes_ports,no_ports,self)
 
         
-class UserConfigPort(base_tests.SimpleProtocol):
+class TestNo20(base_tests.SimpleProtocol):
     """
     Configure control channel on switch
 
@@ -82,7 +85,7 @@ class UserConfigPort(base_tests.SimpleProtocol):
     def runTest(self):
 
         # Send echo_request to verify connection
-        logging.info("Running UserConfigPort test")
+        logging.info("Running TestNo20 UserConfigPort test")
 
         request = message.echo_request()
         (response, pkt) = self.controller.transact(request)
@@ -95,7 +98,7 @@ class UserConfigPort(base_tests.SimpleProtocol):
         logging.info("Configured host : " + str(config["controller_host"]) + "Configured port : " + str(config["controller_port"]))
     
 
-class VersionAnnouncement(base_tests.SimpleDataPlane):
+class TestNo60(base_tests.SimpleDataPlane):
     """
     Verify HELLO response has proper openflow version reported.
     
@@ -103,7 +106,7 @@ class VersionAnnouncement(base_tests.SimpleDataPlane):
     """
     def runTest(self):
 
-        logging.info("Running Version Announcement test")
+        logging.info("Running TestNo60 Version Announcement test")
         
         of_version = test_param_get('version',default = 0x01)
         request = message.hello()  
@@ -116,59 +119,7 @@ class VersionAnnouncement(base_tests.SimpleDataPlane):
         self.assertTrue(response.header.version == of_version, 'switch openflow-version field is not 1.0.0') 
 
 
-
-class NoCommonVersion(base_tests.SimpleProtocol):
-    """
-    No common version negotiated
-    Verify the switch reports correct error message and terminates the connection, 
-    if no common version can be negotiated
-    """
-    def setUp(self):
-
-        #This is almost same as setUp in SimpleProtcocol except that intial hello is set to false
-        self.controller = controller.Controller(
-            host=config["controller_host"],
-            port=config["controller_port"])
-        # clean_shutdown should be set to False to force quit app
-        self.clean_shutdown = True
-        #set initial hello to False
-        self.controller.initial_hello=False
-        self.controller.start()
-        #@todo Add an option to wait for a pkt transaction to ensure version
-        # compatibilty?
-        self.controller.connect(timeout=20)
-
-        # By default, respond to echo requests
-        self.controller.keep_alive = True
-        if not self.controller.active:
-            raise Exception("Controller startup failed")
-        if self.controller.switch_addr is None: 
-            raise Exception("Controller startup failed (no switch addr)")
-        logging.info("Connected " + str(self.controller.switch_addr))
-        
-        
-    def runTest(self):
-
-        logging.info("Running NoCommonVersion Test")                
-        (response, pkt) = self.controller.poll(exp_msg=ofp.OFPT_HELLO,         
-                                               timeout=5)
-        request = message.hello()                                               
-        logging.info("Change hello message version to 0 and send it to control plane")
-        request.header.version=0
-        rv = self.controller.message_send(request)      
-          
-        logging.info("Expecting OFPT_ERROR message")
-        (response, pkt) = self.controller.poll(exp_msg=ofp.OFPT_ERROR,         
-                                               timeout=5)
-                
-        self.assertTrue(response is not None, 
-                               'Switch did not reply with error message') 
-        self.assertTrue(response.type==ofp.OFPET_HELLO_FAILED, 
-                               'Message field type is not HELLO_FAILED') 
-        self.assertTrue(response.code==ofp.OFPHFC_INCOMPATIBLE, 
-                               'Message field code is not OFPHFC_INCOMPATIBLE')        
-
-class VersionNegotiation(base_tests.SimpleProtocol):
+class TestNo70(base_tests.SimpleProtocol):
     """
     Verify switch negotiates on the correct version.
     Upon receipt of the Hello message, the recipient may calculate the OpenFlow protocol version
@@ -200,7 +151,7 @@ class VersionNegotiation(base_tests.SimpleProtocol):
         
     def runTest(self):
 
-        logging.info("Running VersionNegotiation Test") 
+        logging.info("Running TestNo70 VersionNegotiation Test") 
         of_version = test_param_get('version',default = 0x01)               
         (response, pkt) = self.controller.poll(exp_msg=ofp.OFPT_HELLO,         
                                                timeout=5)
@@ -216,7 +167,60 @@ class VersionNegotiation(base_tests.SimpleProtocol):
         self.assertTrue(response is None, 
                                'Switch did not negotiate on the version')  
 
-class EchoTimeout(unittest.TestCase):
+class TestNo80(base_tests.SimpleProtocol):
+    """
+    No common version negotiated
+    Verify the switch reports correct error message and terminates the connection, 
+    if no common version can be negotiated
+    """
+    def setUp(self):
+
+        #This is almost same as setUp in SimpleProtcocol except that intial hello is set to false
+        self.controller = controller.Controller(
+            host=config["controller_host"],
+            port=config["controller_port"])
+        # clean_shutdown should be set to False to force quit app
+        self.clean_shutdown = True
+        #set initial hello to False
+        self.controller.initial_hello=False
+        self.controller.start()
+        #@todo Add an option to wait for a pkt transaction to ensure version
+        # compatibilty?
+        self.controller.connect(timeout=20)
+
+        # By default, respond to echo requests
+        self.controller.keep_alive = True
+        if not self.controller.active:
+            raise Exception("Controller startup failed")
+        if self.controller.switch_addr is None: 
+            raise Exception("Controller startup failed (no switch addr)")
+        logging.info("Connected " + str(self.controller.switch_addr))
+        
+        
+    def runTest(self):
+
+        logging.info("Running TestNo80 No Common Version Test")                
+        (response, pkt) = self.controller.poll(exp_msg=ofp.OFPT_HELLO,         
+                                               timeout=5)
+        request = message.hello()                                               
+        logging.info("Change hello message version to 0 and send it to control plane")
+        request.header.version=0
+        rv = self.controller.message_send(request)      
+          
+        logging.info("Expecting OFPT_ERROR message")
+        (response, pkt) = self.controller.poll(exp_msg=ofp.OFPT_ERROR,         
+                                               timeout=5)
+                
+        self.assertTrue(response is not None, 
+                               'Switch did not reply with error message') 
+        self.assertTrue(response.type==ofp.OFPET_HELLO_FAILED, 
+                               'Message field type is not HELLO_FAILED') 
+        self.assertTrue(response.code==ofp.OFPHFC_INCOMPATIBLE, 
+                               'Message field code is not OFPHFC_INCOMPATIBLE')        
+
+
+
+class TestNo90(unittest.TestCase):
     """
     Verify Echo timeout causes connection to the controller to drop
     """
@@ -250,7 +254,7 @@ class EchoTimeout(unittest.TestCase):
         
     def runTest(self):
 
-        logging.info("Running EchoTimeout ") 
+        logging.info("Running TestNo90 EchoTimeout ") 
        
         request = message.hello()
         timeout = test_param_get('timeout',default = 60)
