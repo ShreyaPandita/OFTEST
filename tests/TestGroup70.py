@@ -641,9 +641,9 @@ class Grp70No160(base_tests.SimpleDataPlane):
 
 
 class Grp70No170(BaseMatchCase):
-"""
-Strip the VLAN tag from a tagged packet
-"""
+    """
+    Strip the VLAN tag from a tagged packet
+    """
     def runTest(self):
 
         logging.info("Running Grp70No170 Strip Vlan tag test")
