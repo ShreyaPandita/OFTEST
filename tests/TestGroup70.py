@@ -25,6 +25,15 @@ from oftest.testutils import *
 from time import sleep
 from FuncUtils import *
 
+
+def port_queues_get(self, queue_stats, port_num):
+            result = []
+            for qs in queue_stats.stats:
+                if qs.port_no != port_num:
+                    continue
+                result.append(qs.queue_id)
+            return result
+
 class Grp70No10(base_tests.SimpleDataPlane):
 
     """NoActionDrop : no action added to flow , drops the packet."""
@@ -431,6 +440,37 @@ class Grp70No90(base_tests.SimpleDataPlane):
         receive_pkt_check(self.dataplane, pkt, yes_ports, [ingress_port],
                       self)
 
+class Grp70No110(base_tests.SimpleDataPlane):
+
+    """Forward enqueue: Packet fowarded to a queue"""
+    
+    def runTest(self):
+
+        logging.info("Running Grp60No170 TxPktPerQueue test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+        
+        # Get queue stats from switch (retrieve current state)
+        (queue_stats,p) = get_queuestats(self,of_ports[1],ofp.OFPQ_ALL)
+        
+        queue_id = port_queues_get(self,queue_stats,of_ports[1])
+
+            for egress_queue_id in queue_id:
+
+                #Clear switch state
+                rv = delete_all_flows(self.controller)
+                self.assertEqual(rv, 0, "Failed to delete all flows")
+
+                # Get Queue stats for selected egress queue only
+                (qs_before,p) = get_queuestats(self,egress_port,egress_queue_id)
+
+                #Insert a flow with enqueue action to queues configured on egress_port, of_ports[1]
+                (pkt,match) = enqueue(self,of_ports[0],of_ports[1],egress_queue_id)
+              
+                #Send packet on the ingress_port and verify its received on egress_port
+                send_packet(self,pkt,of_ports[0],of_ports[1])
 
 
 class Grp70No130(base_tests.SimpleDataPlane):
