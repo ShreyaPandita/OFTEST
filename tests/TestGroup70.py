@@ -457,20 +457,20 @@ class Grp70No110(base_tests.SimpleDataPlane):
         
         queue_id = port_queues_get(self,queue_stats,of_ports[1])
 
-            for egress_queue_id in queue_id:
+        for egress_queue_id in queue_id:
 
-                #Clear switch state
-                rv = delete_all_flows(self.controller)
-                self.assertEqual(rv, 0, "Failed to delete all flows")
+            #Clear switch state
+            rv = delete_all_flows(self.controller)
+            self.assertEqual(rv, 0, "Failed to delete all flows")
 
-                # Get Queue stats for selected egress queue only
-                (qs_before,p) = get_queuestats(self,egress_port,egress_queue_id)
+            # Get Queue stats for selected egress queue only
+            (qs_before,p) = get_queuestats(self,egress_port,egress_queue_id)
 
-                #Insert a flow with enqueue action to queues configured on egress_port, of_ports[1]
-                (pkt,match) = enqueue(self,of_ports[0],of_ports[1],egress_queue_id)
+            #Insert a flow with enqueue action to queues configured on egress_port, of_ports[1]
+            (pkt,match) = enqueue(self,of_ports[0],of_ports[1],egress_queue_id)
               
-                #Send packet on the ingress_port and verify its received on egress_port
-                send_packet(self,pkt,of_ports[0],of_ports[1])
+            #Send packet on the ingress_port and verify its received on egress_port
+            send_packet(self,pkt,of_ports[0],of_ports[1])
 
 
 class Grp70No130(base_tests.SimpleDataPlane):
