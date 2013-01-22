@@ -672,7 +672,7 @@ class Grp70No180(base_tests.SimpleDataPlane):
     def runTest(self):
 
         logging.info("Running Grp70No180 Modify_L2_Src test")
-l
+
         of_ports = config["port_map"].keys()
         of_ports.sort()
         self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
