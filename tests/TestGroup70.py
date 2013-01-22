@@ -20,7 +20,7 @@ import oftest.dataplane as dataplane
 import oftest.action as action
 import oftest.parse as parse
 import oftest.base_tests as base_tests
-import pktact.py 
+import pktact
 
 from oftest.testutils import *
 from time import sleep
@@ -672,7 +672,7 @@ class Grp70No180(base_tests.SimpleDataPlane):
     def runTest(self):
 
         logging.info("Running Grp70No180 Modify_L2_Src test")
-
+l
         of_ports = config["port_map"].keys()
         of_ports.sort()
         self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
