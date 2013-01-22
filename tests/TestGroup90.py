@@ -20,7 +20,7 @@ from FuncUtils import *
 
 
 
-class PortStatusMessage(base_tests.SimpleDataPlane):
+class Grp90No10(base_tests.SimpleDataPlane):
 
     """Verify Port Status Messages are sent to the controller 
     whenever physical ports are added, modified or deleted"""
@@ -29,7 +29,7 @@ class PortStatusMessage(base_tests.SimpleDataPlane):
     
     def runTest(self):
         
-        logging.info("Running PortStatusMessage Test")
+        logging.info("Running Grp90No10 PortStatusMessage Test")
         of_ports = config["port_map"].keys()
         
         #Clear switch state      
@@ -64,14 +64,14 @@ class PortStatusMessage(base_tests.SimpleDataPlane):
         self.assertEqual(response.reason,ofp.OFPPR_ADD,"The reason field of Port Status Message is incorrect")
 
 
-class PortModFlood(base_tests.SimpleDataPlane):
+class Grp90No20(base_tests.SimpleDataPlane):
     
     """ Modify the behavior of physical port using Port Modification Messages
     Change OFPPC_NO_FLOOD flag  and verify change takes place with features request """
 
     def runTest(self):
 
-        logging.info("Running PortModFlood Test")
+        logging.info("Running Grp90No20 PortModFlood Test")
         of_ports = config["port_map"].keys()
         of_ports.sort()
 
@@ -108,7 +108,8 @@ class PortModFlood(base_tests.SimpleDataPlane):
         self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
 
 
-class PortModFwd(base_tests.SimpleDataPlane):
+class Grp90No30a(base_tests.SimpleDataPlane):
+    
     """ 
     Modify the behavior of physical port using Port Modification Messages
     Change OFPPC_NO_FWD flag and verify change took place with Features Request"""
@@ -152,14 +153,14 @@ class PortModFwd(base_tests.SimpleDataPlane):
         self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
 
 
-class PortModPacketIn(base_tests.SimpleDataPlane):
+class Grp90No30b(base_tests.SimpleDataPlane):
     """ 
     Modify the behavior of physical port using Port Modification Messages
     Change OFPPC_NO_PACKET_IN flag and verify change took place with Features Request"""
 
     def runTest(self):
 
-        logging.info("Running PortModPacketIn Test")
+        logging.info("Running Grp90No30b PortModPacketIn Test")
         of_ports = config["port_map"].keys()
         of_ports.sort()
 
@@ -196,7 +197,7 @@ class PortModPacketIn(base_tests.SimpleDataPlane):
         self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
 
 
-class DescStatsReplyBody(base_tests.SimpleDataPlane):
+class Grp90No40(base_tests.SimpleDataPlane):
     
     """Verify Description Stats message body """
     
@@ -231,7 +232,7 @@ class DescStatsReplyBody(base_tests.SimpleDataPlane):
 
 
 
-class QueueConfigReply(base_tests.SimpleProtocol):
+class Grp90No110(base_tests.SimpleProtocol):
 
     """Verify Queue Configuration Reply message body """
 

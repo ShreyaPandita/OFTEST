@@ -25,13 +25,13 @@ from oftest.testutils import *
 from time import sleep
 from FuncUtils import *
 
-class NoAction(base_tests.SimpleDataPlane):
+class Grp70No10(base_tests.SimpleDataPlane):
 
     """NoActionDrop : no action added to flow , drops the packet."""
 
     def runTest(self):
         
-        logging.info("Running No_Action test")
+        logging.info("Running No_Action Grp70No10 test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -76,14 +76,14 @@ class NoAction(base_tests.SimpleDataPlane):
                         'Packets not received on control plane')
 
 
-class Announcement(base_tests.SimpleDataPlane):
+class Grp70No20(base_tests.SimpleDataPlane):
     
     """Announcement : Get all supported actions by the switch.
     Send OFPT_FEATURES_REQUEST to get features supported by sw."""
 
     def runTest(self):
 
-        logging.info("Running Announcement test")
+        logging.info("Running Grp70No20 Announcement test")
 
         logging.info("Sending Features_Request")
         logging.info("Expecting Features Reply with supported actions")
@@ -123,14 +123,14 @@ class Announcement(base_tests.SimpleDataPlane):
         logging.info(supported_actions)
         
 
-class ForwardAll(base_tests.SimpleDataPlane):
+class Grp70No30(base_tests.SimpleDataPlane):
     
     """ForwardAll : Packet is sent to all dataplane ports
     except ingress port when output action.port = OFPP_ALL"""
 
     def runTest(self):
 
-        logging.info("Running Forward_All test")
+        logging.info("Running Grp70No30 Forward_All test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -177,14 +177,14 @@ class ForwardAll(base_tests.SimpleDataPlane):
                       self)
 
 
-class ForwardController(base_tests.SimpleDataPlane):
+class Grp70No40(base_tests.SimpleDataPlane):
     
     """ForwardController : Packet is sent to controller 
     output.port = OFPP_CONTROLLER"""
 
     def runTest(self):
         
-        logging.info("Running Forward_Controller test")
+        logging.info("Running Grp70No40 Forward_Controller test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -232,14 +232,14 @@ class ForwardController(base_tests.SimpleDataPlane):
     
 
 
-class ForwardLocal(base_tests.SimpleDataPlane):
+class Grp70No50(base_tests.SimpleDataPlane):
    
     """ForwardLocal : Packet is sent to  OFPP_LOCAL port . 
         TBD : To verify packet recieved in the local networking stack of switch"""
 
     def runTest(self):
 
-        logging.info("Running Forward_Local test")
+        logging.info("Running Grp70No50 Forward_Local test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -282,16 +282,16 @@ class ForwardLocal(base_tests.SimpleDataPlane):
             #TBD: Verification of packets being recieved.
 
 
-class ForwardFlood(base_tests.SimpleDataPlane):
-    
-    """Forward:Flood : Packet is sent to all dataplane ports
-    except ingress port when output action.port = OFPP_FLOOD 
-    TBD : Verification---Incase of STP being implemented, flood the packet along the minimum spanning tree,
-             not including the incoming interface. """
-    
+class Grp70No60(base_tests.SimpleDataPlane):
+   
+    """ForwardTable : Perform actions in flow table. Only for packet-out messages.
+        If the output action.port in the packetout message = OFP.TABLE , then 
+        the packet implements the action specified in the matching flow of the FLOW-TABLE"""
+
     def runTest(self):
 
-        logging.info("Running Forward_Flood test")
+        logging.info("Running Grp70No60 Forward_Table test")
+
         of_ports = config["port_map"].keys()
         of_ports.sort()
         self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
@@ -300,50 +300,37 @@ class ForwardFlood(base_tests.SimpleDataPlane):
         rv = delete_all_flows(self.controller)
         self.assertEqual(rv, 0, "Failed to delete all flows")
         
-        logging.info("Insert a flow with output action port OFPP_FORWARD")
-        logging.info("Send packet matching the flow")
-        logging.info("Expecting packet on all the ports except the input port")
+        logging.info("Insert a flow F with output action port set to some egress_port")
+        logging.info("Send packet out message (matching flow F) with action.port = OFP.TABLE")
+        logging.info("Expecting packet on the egress_port")
         
-        #Create a packet
-        pkt = simple_tcp_packet()
-        match = parse.packet_to_flow_match(pkt)
+        #Insert a all wildcarded flow
+        (pkt,match) = wildcard_all(self,of_ports)
+        
+        #Create a packet out message
+        pkt_out =message.packet_out();
+        pkt_out.data = str(pkt)
+        pkt_out.in_port = of_ports[0]
         act = action.action_output()
+        act.port = ofp.OFPP_TABLE
+        pkt_out.actions.add(act)
+        rv = self.controller.message_send(pkt_out)
+        self.assertTrue(rv == 0, "Error sending out message")
 
-        #Delete all flows 
-        rv = delete_all_flows(self.controller)
-        self.assertEqual(rv, 0, "Failed to delete all flows")
-        ingress_port=of_ports[0]
-        match.in_port = ingress_port
+        #Verifying packet out message recieved on the expected dataplane port. 
+        (of_port, pkt, pkt_time) = self.dataplane.poll(port_number=of_ports[1],
+                                                             exp_pkt=pkt,timeout=3)
+        self.assertTrue(pkt is not None, 'Packet not received')
 
-        #Create a flow mod with action.port = OFPP_ALL
-        request = message.flow_mod()
-        request.match = match
-        request.match.wildcards = ofp.OFPFW_ALL&~ofp.OFPFW_IN_PORT
-        act.port = ofp.OFPP_FLOOD
-        request.actions.add(act)
-        
-        logging.info("Inserting flow")
-        rv = self.controller.message_send(request)
-        self.assertTrue(rv != -1, "Error installing flow mod")
-        self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
 
-        #Send Packet matching the flow
-        logging.info("Sending packet to dp port " + str(ingress_port))
-        self.dataplane.send(ingress_port, str(pkt))
-
-        #Verifying packets recieved on expected dataplane ports
-        yes_ports = set(of_ports).difference([ingress_port])
-        receive_pkt_check(self.dataplane, pkt, yes_ports, [ingress_port],
-                      self)
-
-class ForwardInport(base_tests.SimpleDataPlane):
+class Grp70No70(base_tests.SimpleDataPlane):
     
     """ ForwardInPort : Packet sent to virtual port IN_PORT
     If the output.port = OFPP.INPORT then the packet is sent to the input port itself"""
 
     def runTest(self):
 
-        logging.info("Running Forward_Inport test")
+        logging.info("Running Grp70No70 Forward_Inport test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -388,16 +375,18 @@ class ForwardInport(base_tests.SimpleDataPlane):
         receive_pkt_check(self.dataplane, pkt, yes_ports,set(of_ports).difference([ingress_port]),
                           self)
 
-class ForwardTable(base_tests.SimpleDataPlane):
-   
-    """ForwardTable : Perform actions in flow table. Only for packet-out messages.
-        If the output action.port in the packetout message = OFP.TABLE , then 
-        the packet implements the action specified in the matching flow of the FLOW-TABLE"""
 
+
+class Grp70No90(base_tests.SimpleDataPlane):
+    
+    """Forward:Flood : Packet is sent to all dataplane ports
+    except ingress port when output action.port = OFPP_FLOOD 
+    TBD : Verification---Incase of STP being implemented, flood the packet along the minimum spanning tree,
+             not including the incoming interface. """
+    
     def runTest(self):
 
-        logging.info("Running Forward_Table test")
-
+        logging.info("Running Grp70No90 Forward_Flood test")
         of_ports = config["port_map"].keys()
         of_ports.sort()
         self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
@@ -406,36 +395,51 @@ class ForwardTable(base_tests.SimpleDataPlane):
         rv = delete_all_flows(self.controller)
         self.assertEqual(rv, 0, "Failed to delete all flows")
         
-        logging.info("Insert a flow F with output action port set to some egress_port")
-        logging.info("Send packet out message (matching flow F) with action.port = OFP.TABLE")
-        logging.info("Expecting packet on the egress_port")
+        logging.info("Insert a flow with output action port OFPP_FORWARD")
+        logging.info("Send packet matching the flow")
+        logging.info("Expecting packet on all the ports except the input port")
         
-        #Insert a all wildcarded flow
-        (pkt,match) = wildcard_all(self,of_ports)
-        
-        #Create a packet out message
-        pkt_out =message.packet_out();
-        pkt_out.data = str(pkt)
-        pkt_out.in_port = of_ports[0]
+        #Create a packet
+        pkt = simple_tcp_packet()
+        match = parse.packet_to_flow_match(pkt)
         act = action.action_output()
-        act.port = ofp.OFPP_TABLE
-        pkt_out.actions.add(act)
-        rv = self.controller.message_send(pkt_out)
-        self.assertTrue(rv == 0, "Error sending out message")
 
-        #Verifying packet out message recieved on the expected dataplane port. 
-        (of_port, pkt, pkt_time) = self.dataplane.poll(port_number=of_ports[1],
-                                                             exp_pkt=pkt,timeout=3)
-        self.assertTrue(pkt is not None, 'Packet not received')
+        #Delete all flows 
+        rv = delete_all_flows(self.controller)
+        self.assertEqual(rv, 0, "Failed to delete all flows")
+        ingress_port=of_ports[0]
+        match.in_port = ingress_port
+
+        #Create a flow mod with action.port = OFPP_ALL
+        request = message.flow_mod()
+        request.match = match
+        request.match.wildcards = ofp.OFPFW_ALL&~ofp.OFPFW_IN_PORT
+        act.port = ofp.OFPP_FLOOD
+        request.actions.add(act)
+        
+        logging.info("Inserting flow")
+        rv = self.controller.message_send(request)
+        self.assertTrue(rv != -1, "Error installing flow mod")
+        self.assertEqual(do_barrier(self.controller), 0, "Barrier failed")
+
+        #Send Packet matching the flow
+        logging.info("Sending packet to dp port " + str(ingress_port))
+        self.dataplane.send(ingress_port, str(pkt))
+
+        #Verifying packets recieved on expected dataplane ports
+        yes_ports = set(of_ports).difference([ingress_port])
+        receive_pkt_check(self.dataplane, pkt, yes_ports, [ingress_port],
+                      self)
 
 
-class AddVlanTag(base_tests.SimpleDataPlane):
+
+class Grp70No130(base_tests.SimpleDataPlane):
     
     """AddVlanTag : Adds VLAN Tag to untagged packet."""
 
     def runTest(self):
 
-        logging.info("Running Add_vlan_tag test")
+        logging.info("Running Grp70No130 Add_vlan_tag test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -469,7 +473,8 @@ class AddVlanTag(base_tests.SimpleDataPlane):
         flow_match_test(self, config["port_map"], pkt=pkt, 
                         exp_pkt=exp_pkt, action_list=[vid_act])
 
-class ModifyVlanTag(base_tests.SimpleDataPlane):
+
+class Grp70No140(base_tests.SimpleDataPlane):
 
     """ModifyVlanTag : Modifies VLAN Tag to tagged packet."""
     
@@ -506,8 +511,8 @@ class ModifyVlanTag(base_tests.SimpleDataPlane):
         #Insert flow with action -- set vid , Send packet matching the flow.Verify recieved packet is expected packet.
         flow_match_test(self, config["port_map"], pkt=pkt, exp_pkt=exp_pkt,
                         action_list=[vid_act])
-        
-class VlanPrio1(base_tests.SimpleDataPlane):
+
+class Grp70No150(base_tests.SimpleDataPlane):
    
     """AddVlanPrioUntaggedPkt : Add VLAN priority to untagged packet."""
     
@@ -546,13 +551,14 @@ class VlanPrio1(base_tests.SimpleDataPlane):
                                 action_list=[act])
 
 
-class VlanPrio2(base_tests.SimpleDataPlane):
+        
+class Grp70No160(base_tests.SimpleDataPlane):
     
     """ModifyVlanPrio : Modify VLAN priority to tagged packet."""
     
     def runTest(self):
         
-        logging.info("Running Vlan_Prio_2 test")
+        logging.info("Running Grp70No160 Vlan_Prio_2 test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -586,13 +592,13 @@ class VlanPrio2(base_tests.SimpleDataPlane):
                         action_list=[vid_act])
 
 
-class ModifyL2Src(base_tests.SimpleDataPlane):
+class Grp70No180(base_tests.SimpleDataPlane):
     
     """ModifyL2Src :Modify the source MAC address"""
 
     def runTest(self):
 
-        logging.info("Running Modify_L2_Src test")
+        logging.info("Running Grp70No180 Modify_L2_Src test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -621,13 +627,13 @@ class ModifyL2Src(base_tests.SimpleDataPlane):
                         action_list=acts, max_test=2)
 
 
-class ModifyL2Dst(base_tests.SimpleDataPlane):
+class Grp70No190(base_tests.SimpleDataPlane):
     
     """ModifyL2SDSt :Modify the dest MAC address"""
 
     def runTest(self):
 
-        logging.info("Running Modify_L2_Dst test")
+        logging.info("Running Grp70No190 Modify_L2_Dst test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -655,13 +661,13 @@ class ModifyL2Dst(base_tests.SimpleDataPlane):
         flow_match_test(self, config["port_map"], pkt=pkt, exp_pkt=exp_pkt, 
                         action_list=acts, max_test=2)
 
-class ModifyL3Src(base_tests.SimpleDataPlane):
+class Grp70No200(base_tests.SimpleDataPlane):
     
     """ModifyL3Src : Modify the source IP address of an IP packet """
 
     def runTest(self):
 
-        logging.info("Running Modify_L3_Src test")
+        logging.info("Running Grp70No200 Modify_L3_Src test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -689,7 +695,7 @@ class ModifyL3Src(base_tests.SimpleDataPlane):
         flow_match_test(self, config["port_map"], pkt=pkt, exp_pkt=exp_pkt, 
                         action_list=acts, max_test=2)
 
-class ModifyL3Dst(base_tests.SimpleDataPlane):
+class Grp70No210(base_tests.SimpleDataPlane):
     
     """ModifyL3Dst :Modify the dest IP address of an IP packet"""
     
@@ -723,14 +729,48 @@ class ModifyL3Dst(base_tests.SimpleDataPlane):
         flow_match_test(self, config["port_map"], pkt=pkt, exp_pkt=exp_pkt, 
                         action_list=acts, max_test=2)
 
+class Grp70No220(base_tests.SimpleDataPlane):
+    
+    """ModifyTOS :Modify the IP type of service of an IP packet"""
+   
+    def runTest(self):
 
-class ModifyL4Src(base_tests.SimpleDataPlane):
+        logging.info("Running Grp70No220 Modify_Tos test")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+        
+        #Clear switch state
+        rv = delete_all_flows(self.controller)
+        self.assertEqual(rv, 0, "Failed to delete all flows")
+
+        logging.info("Verify if switch supports the action -- modify_tos, if not skip the test")
+        logging.info("Insert a flow with action -- set type of service ")
+        logging.info("Send packet matching the flow, verify recieved packet has TOS rewritten ")
+       
+        #Verify set_tos is a supported action
+        sup_acts = sw_supported_actions(self,use_cache="true")
+        if not (sup_acts & 1 << ofp.OFPAT_SET_NW_TOS):
+            skip_message_emit(self, "ModifyTOS test")
+            return
+
+        #Create packet to be sent and expected packet with TOS set to specified value
+        (pkt, exp_pkt, acts) = pkt_action_setup(self, mod_fields=['ip_tos'],
+                                                check_test_params=True)
+        
+        #Insert flow with action -- set TOS, Send packet matching the flow, Verify recieved packet is expected packet
+        flow_match_test(self, config["port_map"], pkt=pkt, exp_pkt=exp_pkt, 
+                        action_list=acts, max_test=2, egr_count=-1)
+
+
+class Grp70No230(base_tests.SimpleDataPlane):
     
     """ModifyL4Src : Modify the source TCP port of a TCP packet"""
     
     def runTest(self):
 
-        logging.info("Running Modify_L4_Src test")
+        logging.info("Running Grp70No230 Modify_L4_Src test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -758,7 +798,7 @@ class ModifyL4Src(base_tests.SimpleDataPlane):
         flow_match_test(self, config["port_map"], pkt=pkt, exp_pkt=exp_pkt, 
                         action_list=acts, max_test=2)
 
-class ModifyL4Dst(base_tests.SimpleDataPlane):
+class Grp70No240(base_tests.SimpleDataPlane):
     
     """ ModifyL4Dst: Modify the dest TCP port of a TCP packet """
 
@@ -792,36 +832,3 @@ class ModifyL4Dst(base_tests.SimpleDataPlane):
         flow_match_test(self, config["port_map"], pkt=pkt, exp_pkt=exp_pkt, 
                         action_list=acts, max_test=2)
 
-class ModifyTos(base_tests.SimpleDataPlane):
-    
-    """ModifyTOS :Modify the IP type of service of an IP packet"""
-   
-    def runTest(self):
-
-        logging.info("Running Modify_Tos test")
-
-        of_ports = config["port_map"].keys()
-        of_ports.sort()
-        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
-        
-        #Clear switch state
-        rv = delete_all_flows(self.controller)
-        self.assertEqual(rv, 0, "Failed to delete all flows")
-
-        logging.info("Verify if switch supports the action -- modify_tos, if not skip the test")
-        logging.info("Insert a flow with action -- set type of service ")
-        logging.info("Send packet matching the flow, verify recieved packet has TOS rewritten ")
-       
-        #Verify set_tos is a supported action
-        sup_acts = sw_supported_actions(self,use_cache="true")
-        if not (sup_acts & 1 << ofp.OFPAT_SET_NW_TOS):
-            skip_message_emit(self, "ModifyTOS test")
-            return
-
-        #Create packet to be sent and expected packet with TOS set to specified value
-        (pkt, exp_pkt, acts) = pkt_action_setup(self, mod_fields=['ip_tos'],
-                                                check_test_params=True)
-        
-        #Insert flow with action -- set TOS, Send packet matching the flow, Verify recieved packet is expected packet
-        flow_match_test(self, config["port_map"], pkt=pkt, exp_pkt=exp_pkt, 
-                        action_list=acts, max_test=2, egr_count=-1)

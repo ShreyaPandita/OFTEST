@@ -23,14 +23,14 @@ from oftest.testutils import *
 from time import sleep
 from FuncUtils import *
 
-class FeaturesRequest(base_tests.SimpleProtocol): 
+class Grp20No10(base_tests.SimpleProtocol): 
 
     """Verify Features_Request-Reply is implemented 
     a) Send OFPT_FEATURES_REQUEST
 	b) Verify OFPT_FEATURES_REPLY is received without errors"""
 
     def runTest(self):
-        logging.info("Running Features_Request test")
+        logging.info("Running Grp20No10 Features_Request test")
         
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -52,7 +52,7 @@ class FeaturesRequest(base_tests.SimpleProtocol):
                         'Did not receive Features Reply')
 
 
-class ConfigurationRequest(base_tests.SimpleProtocol):
+class Grp20No20(base_tests.SimpleProtocol):
     
     """Check basic Get Config request is implemented
     a) Send OFPT_GET_CONFIG_REQUEST
@@ -60,7 +60,7 @@ class ConfigurationRequest(base_tests.SimpleProtocol):
 
     def runTest(self):
 
-        logging.info("Running Configuration_Request test ")
+        logging.info("Running Grp20No20 Configuration_Request test ")
         
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -81,7 +81,7 @@ class ConfigurationRequest(base_tests.SimpleProtocol):
         self.assertTrue(response is not None, 
                         'Did not receive OFPT_GET_CONFIG_REPLY')
 
-class ModifyStateAdd(base_tests.SimpleProtocol):
+class Grp20No30(base_tests.SimpleProtocol):
     
     """Check basic Flow Add request is implemented
     a) Send  OFPT_FLOW_MOD , command = OFPFC_ADD 
@@ -89,7 +89,7 @@ class ModifyStateAdd(base_tests.SimpleProtocol):
 
     def runTest(self):
 
-        logging.info("Running Modify_State_Add test")
+        logging.info("Running Grp20No30 Modify_State_Add test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -108,7 +108,7 @@ class ModifyStateAdd(base_tests.SimpleProtocol):
         verify_tablestats(self,expect_active=1)
 
 
-class ModifyStateDelete(base_tests.SimpleProtocol):
+class Grp20No40(base_tests.SimpleProtocol):
     
     """Check Basic Flow Delete request is implemented
     a) Send OFPT_FLOW_MOD, command = OFPFC_ADD
@@ -118,7 +118,7 @@ class ModifyStateDelete(base_tests.SimpleProtocol):
 
     def runTest(self):
 
-        logging.info("Running Modify_State_Delete test")
+        logging.info("Running Grp20No40 Modify_State_Delete test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -144,7 +144,7 @@ class ModifyStateDelete(base_tests.SimpleProtocol):
 
       
 
-class ModifyStateModify(base_tests.SimpleDataPlane):
+class Grp20No50(base_tests.SimpleDataPlane):
     
     """Verify basic Flow Modify request is implemented
     a) Send OFPT_FLOW_MOD, command = OFPFC_ADD, Action A 
@@ -153,7 +153,7 @@ class ModifyStateModify(base_tests.SimpleDataPlane):
 
     def runTest(self):
 
-        logging.info("Running Modify_State_Modify test")
+        logging.info("Running Grp20No50 Modify_State_Modify test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -175,7 +175,7 @@ class ModifyStateModify(base_tests.SimpleDataPlane):
         send_packet(self,pkt,of_ports[0],of_ports[2])
                        
 
-class ReadState(base_tests.SimpleProtocol):
+class Grp20No60(base_tests.SimpleProtocol):
     
     """Test that a basic Read state request (like flow_stats_get request) does not generate an error
     a) Send OFPT_FLOW_MOD, command = OFPFC_ADD
@@ -184,7 +184,7 @@ class ReadState(base_tests.SimpleProtocol):
 
     def runTest(self):
 
-        logging.info("Running Read_State test")
+        logging.info("Running Grp20No60 Read_State test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -202,7 +202,7 @@ class ReadState(base_tests.SimpleProtocol):
         #Verify Flow_Stats request does not generate errors
         get_flowstats(self,match)
         
-class PacketOut(base_tests.SimpleDataPlane):
+class Grp20No70(base_tests.SimpleDataPlane):
     
     """Test packet out function
     a) Send packet out message for each dataplane port.
@@ -210,7 +210,7 @@ class PacketOut(base_tests.SimpleDataPlane):
     
     def runTest(self):
 
-        logging.info("Running Packet_Out test")
+        logging.info("Running Grp20No70 Packet_Out test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -258,8 +258,30 @@ class PacketOut(base_tests.SimpleDataPlane):
                 self.assertEqual(str(outpkt), str(pkt)[:len(str(outpkt))],
                                     'Response packet does not match send packet')
 
+
+class Grp20No80(base_tests.SimpleProtocol):
+
+    """ Check basic Barrier request is implemented
+    a) Send OFPT_BARRIER_REQUEST
+    c) Verify OFPT_BARRIER_REPLY is recieved"""
+    
+    def runTest(self):
+
+        logging.info("Running Grp20No80 Barrier_Request_Reply test")
+
+        logging.info("Sending Barrier Request")
+        logging.info("Expecting a Barrier Reply with same xid")
+
+        #Send Barrier Request
+        request = message.barrier_request()
+        (response,pkt) = self.controller.transact(request)
+        self.assertEqual(response.header.type, ofp.OFPT_BARRIER_REPLY,'response is not barrier_reply')
+        self.assertEqual(request.header.xid, response.header.xid,
+                         'response xid != request xid')
+
+
         
-class PacketIn(base_tests.SimpleDataPlane):
+class Grp20No90(base_tests.SimpleDataPlane):
     
     """Test basic packet_in function
     a) Send a simple tcp packet to a dataplane port, without any flow-entry 
@@ -267,7 +289,7 @@ class PacketIn(base_tests.SimpleDataPlane):
     
     def runTest(self):
         
-        logging.info("Running Packet_In test")
+        logging.info("Running Grp20No90 Packet_In test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -293,7 +315,7 @@ class PacketIn(base_tests.SimpleDataPlane):
                                'Packet in event is not sent to the controller') 
 
 
-class Hello(base_tests.SimpleDataPlane):
+class Grp20No100(base_tests.SimpleDataPlane):
     
     """Test Hello messages are implemented
     a) Create Hello messages from controller
@@ -302,7 +324,7 @@ class Hello(base_tests.SimpleDataPlane):
 
     def runTest(self):
         
-        logging.info("Running Hello test")
+        logging.info("Running Grp20No100 Hello test")
 
         logging.info("Sending Hello")
         logging.info("Expecting a Hello on the control plane with version--1.0.0")
@@ -317,7 +339,7 @@ class Hello(base_tests.SimpleDataPlane):
 
 
 
-class EchoWithoutBody(base_tests.SimpleProtocol):
+class Grp20No110(base_tests.SimpleProtocol):
     
     """Test basic echo-reply is implemented
     a)  Send echo-request from the controller side, note echo body is empty here.
@@ -325,7 +347,7 @@ class EchoWithoutBody(base_tests.SimpleProtocol):
     
     def runTest(self):
 
-        logging.info("Running Echo_Without_Body test")
+        logging.info("Running Grp20No110 Echo_Without_Body test")
 
         logging.info("Sending Echo Request")
         logging.info("Expecting a Echo Reply with version--1.0.0 and same xid")
@@ -339,26 +361,6 @@ class EchoWithoutBody(base_tests.SimpleProtocol):
         self.assertTrue(response.header.version == 0x01, 'switch openflow-version field is not 1.0.1')
         self.assertEqual(len(response.data), 0, 'response data non-empty')
 
-
-class BarrierRequestReply(base_tests.SimpleProtocol):
-
-    """ Check basic Barrier request is implemented
-    a) Send OFPT_BARRIER_REQUEST
-    c) Verify OFPT_BARRIER_REPLY is recieved"""
-    
-    def runTest(self):
-
-        logging.info("Running Barrier_Request_Reply test")
-
-        logging.info("Sending Barrier Request")
-        logging.info("Expecting a Barrier Reply with same xid")
-
-        #Send Barrier Request
-        request = message.barrier_request()
-        (response,pkt) = self.controller.transact(request)
-        self.assertEqual(response.header.type, ofp.OFPT_BARRIER_REPLY,'response is not barrier_reply')
-        self.assertEqual(request.header.xid, response.header.xid,
-                         'response xid != request xid')
 
 
 

@@ -22,14 +22,14 @@ from oftest.testutils import *
 from time import sleep
 from FuncUtils import *
 
-class OverlapChecking(base_tests.SimpleDataPlane):
+class Grp40No10(base_tests.SimpleDataPlane):
     
     """Verify that if overlap check flag is set in the flow entry and an overlapping flow is inserted then an error 
         is generated and switch refuses flow entry"""
     
     def runTest(self):
         
-        logging.info("Running Overlap_Checking test")
+        logging.info("Running Grp40No10 Overlap_Checking test")
        
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -83,13 +83,13 @@ class OverlapChecking(base_tests.SimpleDataPlane):
                                'Error Message code is not overlap')
 
 
-class NoOverlapChecking(base_tests.SimpleDataPlane):
+class Grp40No20(base_tests.SimpleDataPlane):
 
-    """Verify that without overlap check flag set, overlapping flows can be created."""  
+    """Verify that without overlap check flag set, Grp40No20overlapping flows can be created."""  
     
     def runTest(self):
      
-        logging.info("Running No_Overlap_Checking test")
+        logging.info("Running Grp40No20 No_Overlap_Checking test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -115,13 +115,13 @@ class NoOverlapChecking(base_tests.SimpleDataPlane):
         verify_tablestats(self,expect_active=2)
 
 
-class IdenticalFlows(base_tests.SimpleDataPlane):
+class Grp40No30(base_tests.SimpleDataPlane):
     
     """Verify that adding two identical flows overwrites the existing one and clears counters"""
 
     def runTest(self):
         
-        logging.info("Running Identical_Flows test ")
+        logging.info("Running Grp40No30 Identical_Flows test ")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -155,14 +155,57 @@ class IdenticalFlows(base_tests.SimpleDataPlane):
         # Verify Flow counters reset
         verify_flowstats(self,match,byte_count=0,packet_count=0)
 
-   
-class EmerFlowTimeout(base_tests.SimpleProtocol): 
+
+class Grp40No40(base_tests.SimpleProtocol):
+    
+    """When the output to switch port action refers to a port that will never be valid ,
+    the switch generates an OFPT_ERROR msg , with type field OFPT_BAD_ACTION and code field OFPBAC_BAD_OUT_PORT
+    
+    Some switches may generate an OFPT_ERROR , with type field FLOW_MOD_FAILED and code permission errors 
+    (this is also acceptable)
+    """
+
+    def runTest(self):
+
+        logging.info("Running Grp40No40 NeverValidPort test")
+
+        # pick a random bad port number
+        bad_port=ofp.OFPP_MAX
+        pkt=simple_tcp_packet()
+        act=action.action_output()   
+
+        #Send flow_mod message
+        logging.info("Sending flow_mod message..")   
+        request = flow_msg_create(self, pkt, ing_port=1, egr_ports=bad_port)
+        rv = self.controller.message_send(request)
+        self.assertTrue(rv != -1 ,"Unable to send the message")
+        count = 0
+        # poll for error message
+        logging.info("Waiting for OFPT_ERROR message...")
+        while True:
+            (response, pkt) = self.controller.poll(exp_msg=ofp.OFPT_ERROR,         
+                                               timeout=5)
+            if not response:  # Timeout
+                break
+            if not response.type == ofp.OFPET_BAD_ACTION | ofp.OFPET_FLOW_MOD_FAILED:
+                logging.info("Error type is not as expected")
+                break
+            if not response.code == ofp.OFPPMFC_BAD_PORT | ofp.OFPFMFC_EPERM:
+                logging.info("Error field code is not as expected")
+                break
+            if not config["relax"]:  # Only one attempt to match
+                break
+            count += 1
+            if count > 10:   # Too many tries
+                break
+  
+class Grp40No50(base_tests.SimpleProtocol): 
 
     """Timeout values are not allowed for emergency flows"""
 
     def runTest(self):
 
-        logging.info("Running Emergency_Flow_Timeout test")
+        logging.info("Running Grp40No50 Emergency_Flow_Timeout test")
         
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -208,13 +251,16 @@ class EmerFlowTimeout(base_tests.SimpleProtocol):
                                'Error Message code is not bad emergency timeout')
 
 
-class MissingModifyAdd(base_tests.SimpleDataPlane):
+
+
+
+class Grp40No90(base_tests.SimpleDataPlane):
 
     """If a modify does not match an existing flow, the flow gets added """
     
     def runTest(self):
         
-        logging.info("Running Missing_Modify_Add test")
+        logging.info("Running Grp40No90 Missing_Modify_Add test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -248,13 +294,13 @@ class MissingModifyAdd(base_tests.SimpleDataPlane):
         verify_tablestats(self,expect_active=1)
 
 
-class ModifyAction(base_tests.SimpleDataPlane):
+class Grp40No100(base_tests.SimpleDataPlane):
 
     """A modified flow preserves counters"""
     
     def runTest(self):
         
-        logging.info("Running Modify_Action test ")
+        logging.info("Running Grp40No100 Modify_Action test ")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -286,13 +332,13 @@ class ModifyAction(base_tests.SimpleDataPlane):
         verify_flowstats(self,match,byte_count=(2*len(str(pkt))),packet_count=2)
 
 
-class StrictModifyAction(base_tests.SimpleDataPlane):
+class Grp40No110(base_tests.SimpleDataPlane):
 
     """Strict Modify Flow also changes action preserves counters"""
 
     def runTest(self):
         
-        logging.info("Running Strict_Modify_Action test")
+        logging.info("Running Grp40No110 Strict_Modify_Action test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -330,13 +376,13 @@ class StrictModifyAction(base_tests.SimpleDataPlane):
         verify_flowstats(self,match,byte_count=(2*len(str(pkt))),packet_count=2)
 
 
-class DeleteNonexistingFlow(base_tests.SimpleDataPlane):
+class Grp40No120(base_tests.SimpleDataPlane):
     
     """Request deletion of non-existing flow"""
     
     def runTest(self):
         
-        logging.info("Delete_NonExisting_Flow test begins")
+        logging.info("Delete_NonExisting_Flow Grp40No120 test begins")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -364,7 +410,7 @@ class DeleteNonexistingFlow(base_tests.SimpleDataPlane):
 
 
         
-class SendFlowRem(base_tests.SimpleDataPlane):
+class Grp40No130(base_tests.SimpleDataPlane):
     
     """Check deletion of flows happens and generates messages as configured.
     If Send Flow removed message Flag is set in the flow entry, the flow deletion of that respective flow should generate the flow removed message, 
@@ -372,7 +418,7 @@ class SendFlowRem(base_tests.SimpleDataPlane):
 
     def runTest(self):
 
-        logging.info("Running Send_Flow_Rem test ")
+        logging.info("Running Grp40No130 Send_Flow_Rem test ")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -425,14 +471,14 @@ class SendFlowRem(base_tests.SimpleDataPlane):
                         'Did not receive flow removed message for this flow')
 
 
-class DeleteEmerFlow(base_tests.SimpleProtocol):
+class Grp40No140(base_tests.SimpleProtocol):
 
     """Delete emergency flow and verify no message is generated.An emergency flow deletion will not generate flow-removed messages even if 
     Send Flow removed message flag was set during the emergency flow entry"""
 
     def runTest(self):
 
-        logging.info("Running Delete_Emer_Flow")
+        logging.info("Running Grp40No140 Delete_Emer_Flow")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -468,14 +514,14 @@ class DeleteEmerFlow(base_tests.SimpleProtocol):
                         'Test Failed ')
 
 
-class StrictVsNonstrict(base_tests.SimpleDataPlane):
+class Grp40No150(base_tests.SimpleDataPlane):
 
     """Delete and verify strict and non-strict behaviors
     This test compares the behavior of delete strict and non-strict"""
 
     def runTest(self):
         
-        logging.info("Strict_Vs_Nonstrict test begins")
+        logging.info("Strict_Vs_Nonstrict Grp40No150 test begins")
         
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -555,14 +601,14 @@ class StrictVsNonstrict(base_tests.SimpleDataPlane):
 
         
    
-class Outport1(base_tests.SimpleDataPlane):
+class Grp40No160(base_tests.SimpleDataPlane):
 
     """Delete flows filtered by action outport.If the out_port field in the delete command contains a value other than OFPP_NONE,
     it introduces a constraint when matching. This constraint is that the rule must contain an output action directed at that port."""
 
     def runTest(self):
         
-        logging.info("Outport1 test begins")
+        logging.info("Outport1 Grp40No160 test begins")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -613,14 +659,52 @@ class Outport1(base_tests.SimpleDataPlane):
         #Verify flow gets deleted.
         verify_tablestats(self,expect_active=0)
 
+class Grp40No170(base_tests.SimpleDataPlane):
 
-class IdleTimeout(base_tests.SimpleDataPlane):
+    """Add, modify flows with outport set. This field is ignored by ADD, MODIFY, and MODIFY STRICT messages."""
+
+    def runTest(self):
+        
+        logging.info("Running Grp40No170 Outport2 test ")
+
+        of_ports = config["port_map"].keys()
+        of_ports.sort()
+        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
+
+        #Clear switch state
+        rc = delete_all_flows(self.controller)
+        self.assertEqual(rc, 0, "Failed to delete all flows")
+
+        logging.info("Adding and modifying flow with out_port fields set")
+        logging.info("Expecting switch to ignore out_port")
+
+        # Create and add flow-1,Action A ,output to port of_port[1], out_port set to of_ports[2]
+        (pkt,match) = wildcard_all_except_ingress(self,of_ports)
+
+        # Verify flow is active
+        verify_tablestats(self,expect_active=1)
+        
+        # Send Packet matching the flow
+        send_packet(self,pkt,of_ports[0],of_ports[1])
+        
+        # Insert Flow-Modify matching flow F-1 ,action A', output to port[2], out_port set to port[3]
+        modify_flow_action(self,of_ports,match)
+
+        # Again verify active_entries in table_stats_request =1 
+        verify_tablestats(self,expect_active=1)
+
+        #Verify action is modified
+        send_packet(self,pkt,of_ports[0],of_ports[2])
+
+
+
+class Grp40No180(base_tests.SimpleDataPlane):
 
     """ Verify that idle timeout is implemented"""
 
     def runTest(self):
         
-        logging.info("Running Idle_Timeout test ")
+        logging.info("Running Grp40No180 Idle_Timeout test ")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
@@ -658,47 +742,10 @@ class IdleTimeout(base_tests.SimpleDataPlane):
                          'Flow was not alive for 1 sec')
 
 
-class Outport2(base_tests.SimpleDataPlane):
-
-    """Add, modify flows with outport set. This field is ignored by ADD, MODIFY, and MODIFY STRICT messages."""
-
-    def runTest(self):
-        
-        logging.info("Running Outport2 test ")
-
-        of_ports = config["port_map"].keys()
-        of_ports.sort()
-        self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
-
-        #Clear switch state
-        rc = delete_all_flows(self.controller)
-        self.assertEqual(rc, 0, "Failed to delete all flows")
-
-        logging.info("Adding and modifying flow with out_port fields set")
-        logging.info("Expecting switch to ignore out_port")
-
-        # Create and add flow-1,Action A ,output to port of_port[1], out_port set to of_ports[2]
-        (pkt,match) = wildcard_all_except_ingress(self,of_ports)
-
-        # Verify flow is active
-        verify_tablestats(self,expect_active=1)
-        
-        # Send Packet matching the flow
-        send_packet(self,pkt,of_ports[0],of_ports[1])
-        
-        # Insert Flow-Modify matching flow F-1 ,action A', output to port[2], out_port set to port[3]
-        modify_flow_action(self,of_ports,match)
-
-        # Again verify active_entries in table_stats_request =1 
-        verify_tablestats(self,expect_active=1)
-
-        #Verify action is modified
-        send_packet(self,pkt,of_ports[0],of_ports[2])
 
 
 
-
-class HardTimeout(base_tests.SimpleDataPlane):
+class Grp40No190(base_tests.SimpleDataPlane):
 
     """ Verify that hard timeout is implemented """
 
@@ -742,7 +789,7 @@ class HardTimeout(base_tests.SimpleDataPlane):
                          'Flow was not alive for 1 sec')
 
 
-class FlowTimeout(base_tests.SimpleDataPlane):
+class Grp40No200(base_tests.SimpleDataPlane):
   
     """Verify that Flow removed messages are generated as expected
     Flow removed messages being generated when flag is set, is already tested in the above tests 

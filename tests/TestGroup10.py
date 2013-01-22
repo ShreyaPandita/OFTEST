@@ -31,7 +31,7 @@ from time import sleep
 from FuncUtils import *
 from serial_failover import *
 
-class TestNo10(base_tests.SimpleDataPlane):
+class Grp10No10(base_tests.SimpleDataPlane):
     """
     Switch Startup behaviour without estabilished control channel. 
     Make sure no dataplane packets are forwarded (since there are no flows)
@@ -73,7 +73,7 @@ class TestNo10(base_tests.SimpleDataPlane):
         receive_pkt_check(self.dataplane,packet,yes_ports,no_ports,self)
 
         
-class TestNo20(base_tests.SimpleProtocol):
+class Grp10No20(base_tests.SimpleProtocol):
     """
     Configure control channel on switch
 
@@ -98,7 +98,7 @@ class TestNo20(base_tests.SimpleProtocol):
         logging.info("Configured host : " + str(config["controller_host"]) + "Configured port : " + str(config["controller_port"]))
     
 
-class TestNo60(base_tests.SimpleDataPlane):
+class Grp10No60(base_tests.SimpleDataPlane):
     """
     Verify HELLO response has proper openflow version reported.
     
@@ -119,7 +119,7 @@ class TestNo60(base_tests.SimpleDataPlane):
         self.assertTrue(response.header.version == of_version, 'switch openflow-version field is not 1.0.0') 
 
 
-class TestNo70(base_tests.SimpleProtocol):
+class Grp10No70(base_tests.SimpleProtocol):
     """
     Verify switch negotiates on the correct version.
     Upon receipt of the Hello message, the recipient may calculate the OpenFlow protocol version
@@ -167,7 +167,7 @@ class TestNo70(base_tests.SimpleProtocol):
         self.assertTrue(response is None, 
                                'Switch did not negotiate on the version')  
 
-class TestNo80(base_tests.SimpleProtocol):
+class Grp10No80(base_tests.SimpleProtocol):
     """
     No common version negotiated
     Verify the switch reports correct error message and terminates the connection, 
@@ -220,7 +220,7 @@ class TestNo80(base_tests.SimpleProtocol):
 
 
 
-class TestNo90(unittest.TestCase):
+class Grp10No90(unittest.TestCase):
     """
     Verify Echo timeout causes connection to the controller to drop
     """
@@ -273,7 +273,7 @@ class TestNo90(unittest.TestCase):
 
         
 
-class TestNo120(base_tests.SimpleDataPlane):
+class Grp10No120(base_tests.SimpleDataPlane):
     """
     If the switch supports Emergency-Mode,
     then verify 
@@ -311,7 +311,7 @@ class TestNo120(base_tests.SimpleDataPlane):
 
 
 
-class TestNo140(base_tests.SimpleDataPlane):
+class Grp10No140(base_tests.SimpleDataPlane):
     """
     If the switch supports Emergency-Mode,
     then verify 
@@ -364,7 +364,7 @@ class TestNo140(base_tests.SimpleDataPlane):
 
 
 
-class TestNo150(base_tests.SimpleDataPlane):
+class Grp10No150(base_tests.SimpleDataPlane):
     """If switch does not support Emergency mode , it should support fail-secure mode
     (refer spec 1.0.1).
     Verify even after the control channel disconnection, the standard flows timeout normally"""
