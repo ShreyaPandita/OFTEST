@@ -177,7 +177,7 @@ class Grp100No90(base_tests.SimpleProtocol):
                                'Error code is not OFPBRC_BAD_LEN')   
 
 
-class Grp100No110(tests.SimpleProtocol):
+class Grp100No110(base_tests.SimpleProtocol):
     """
     Specified buffer does not exist. 
 
