@@ -640,7 +640,7 @@ class Grp70No160(base_tests.SimpleDataPlane):
                         action_list=[vid_act])
 
 
-class Grp70No170(BaseMatchCase):
+class Grp70No170(pktact.BaseMatchCase):
     """
     Strip the VLAN tag from a tagged packet
     """
