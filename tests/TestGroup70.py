@@ -442,36 +442,43 @@ class Grp70No90(base_tests.SimpleDataPlane):
 
 class Grp70No110(base_tests.SimpleDataPlane):
 
-    """Forward enqueue: Packet fowarded to a queue"""
+    """Forward Enqueue : Send packets to queues configured"""
     
     def runTest(self):
-
-        logging.info("Running Grp60No170 TxPktPerQueue test")
+        logging.info("Running Grp60N110 ForwardEnqueue test")
 
         of_ports = config["port_map"].keys()
         of_ports.sort()
         self.assertTrue(len(of_ports) > 1, "Not enough ports for test")
         
         # Get queue stats from switch (retrieve current state)
-        (queue_stats,p) = get_queuestats(self,of_ports[1],ofp.OFPQ_ALL)
-        
-        queue_id = port_queues_get(self,queue_stats,of_ports[1])
+        (queue_stats,p) = get_queuestats(self,ofp.OFPP_ALL,ofp.OFPQ_ALL)
+  
+        for idx in range(len(of_ports)):
+            ingress_port = of_ports[idx]
+            egress_port = of_ports[(idx + 1) % len(of_ports)]
 
-        for egress_queue_id in queue_id:
+            queue_id = port_queues_get(self,queue_stats,egress_port)
 
-            #Clear switch state
-            rv = delete_all_flows(self.controller)
-            self.assertEqual(rv, 0, "Failed to delete all flows")
+            for egress_queue_id in queue_id:
 
-            # Get Queue stats for selected egress queue only
-            (qs_before,p) = get_queuestats(self,egress_port,egress_queue_id)
+                #Clear switch state
+                rv = delete_all_flows(self.controller)
+                self.assertEqual(rv, 0, "Failed to delete all flows")
 
-            #Insert a flow with enqueue action to queues configured on egress_port, of_ports[1]
-            (pkt,match) = enqueue(self,of_ports[0],of_ports[1],egress_queue_id)
+                # Get Queue stats for selected egress queue only
+                (qs_before,p) = get_queuestats(self,egress_port,egress_queue_id)
+
+                #Insert a flow with enqueue action to queues configured on egress_port
+                (pkt,match) = enqueue(self,ingress_port,egress_port,egress_queue_id)
               
-            #Send packet on the ingress_port and verify its received on egress_port
-            send_packet(self,pkt,of_ports[0],of_ports[1])
+                #Send packet on the ingress_port and verify its received on egress_port
+                send_packet(self,pkt,ingress_port,egress_port)
+                
+                expected_packets = qs_before.stats[0].tx_packets+1
 
+                verify_queuestats(self,egress_port,egress_queue_id,expect_packet=expected_packets)
+                
 
 class Grp70No130(base_tests.SimpleDataPlane):
     
