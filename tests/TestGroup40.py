@@ -730,6 +730,8 @@ class Grp40No180(base_tests.SimpleDataPlane):
 
         #Verify flow gets inserted
         verify_tablestats(self,expect_active=1)
+
+        sleep(5)
         
         # Verify flow removed message is recieved.
         (response, pkt) = self.controller.poll(exp_msg=ofp.OFPT_FLOW_REMOVED,
